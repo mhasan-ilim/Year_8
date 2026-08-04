@@ -1,0 +1,485 @@
+<style>
+  :root {
+    --navy: #1B2A4A; --navy2: #23375F; --teal: #2E7D6E; --gold: #C99A2E;
+    --ink: #1A1A1A; --mute: #5B6B7A; --soft: #EFF3F1; --line: #E3E7E9; --white: #FFFFFF;
+  }
+  * { box-sizing: border-box; }
+  #quiz-app {
+    font-family: Calibri, "Segoe UI", system-ui, sans-serif; color: var(--ink); background: var(--white);
+    max-width: 880px; margin: 0 auto; line-height: 1.5; padding-bottom: 60px;
+  }
+  #quiz-app h1, #quiz-app h2 { margin: 0; }
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between; padding: 12px 20px;
+    border-bottom: 3px solid var(--gold); background: var(--navy); color: white; position: sticky; top: 0; z-index: 20;
+  }
+  .topbar .title { font-size: 15px; font-weight: 700; }
+  .topbar .right { display:flex; align-items:center; gap: 12px; }
+  .timer { background: rgba(255,255,255,0.12); border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 700; }
+  .timer.low { background: #B3271E; }
+  .staff-btn {
+    background: transparent; border: 1px solid rgba(255,255,255,0.25); color: rgba(255,255,255,0.55);
+    width: 30px; height: 30px; border-radius: 999px; font-size: 13px; cursor: pointer; line-height: 1;
+  }
+  .staff-btn:hover { color: white; border-color: rgba(255,255,255,0.5); }
+  .hero { padding: 20px 20px 8px; border-bottom: 1px solid var(--line); }
+  .hero .eyebrow { color: var(--teal); font-weight: 700; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; }
+  .hero h1 { font-size: 24px; margin-top: 4px; }
+  .hero .sub { color: var(--mute); font-style: italic; margin-top: 4px; font-size: 14px; }
+  .panel { padding: 18px 20px; }
+  .setup-grid { display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 4px; }
+  @media (max-width: 640px) { .setup-grid { grid-template-columns: 1fr; } }
+  label.field-label { display:block; font-size: 12px; font-weight: 700; color: var(--navy); margin-bottom: 4px; text-transform: uppercase; letter-spacing: .4px; }
+  input[type=text], input[type=date], select, textarea {
+    width: 100%; padding: 9px 10px; border: 1.5px solid var(--line); border-radius: 8px;
+    font-size: 14px; font-family: inherit; color: var(--ink); background: white;
+  }
+  textarea { resize: vertical; min-height: 50px; }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--teal); outline-offset: 1px; border-color: var(--teal); }
+  .part-header {
+    margin-top: 28px; padding: 10px 16px; background: var(--navy); color: white; border-radius: 10px;
+    font-size: 14px; font-weight: 700; display:flex; justify-content: space-between; align-items:center;
+  }
+  .part-header .count { font-weight: 500; font-size: 12.5px; color: #C7D3E8; }
+  .q { margin-top: 16px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 10px; }
+  .q .qnum { display:inline-block; background: var(--soft); color: var(--navy); font-weight: 700; font-size: 12px; padding: 2px 9px; border-radius: 999px; margin-bottom: 8px; }
+  .q .marks { float: right; color: var(--mute); font-size: 11.5px; font-weight: 700; }
+  .q label.qtext { display:block; font-weight: 600; font-size: 14.5px; margin-bottom: 8px; }
+  .mcq-opts { display: grid; gap: 6px; }
+  .mcq-opt { display:flex; align-items:center; gap: 8px; padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 8px; cursor: pointer; font-size: 13.5px; }
+  .mcq-opt:hover { border-color: var(--teal); }
+  .mcq-opt input { margin: 0; }
+  .btn { background: var(--navy); color: white; border: none; padding: 11px 22px; border-radius: 999px; font-size: 14px; font-weight: 700; cursor: pointer; }
+  .btn:hover { background: var(--navy2); }
+  .btn.secondary { background: white; color: var(--navy); border: 1.5px solid var(--navy); }
+  .btn.small { padding: 6px 14px; font-size: 12.5px; }
+  .submit-row { margin-top: 26px; padding: 18px 20px; background: var(--soft); border-radius: 12px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+  .status-msg { font-size: 13.5px; font-weight: 600; }
+  .status-msg.ok { color: var(--teal); }
+  .status-msg.err { color: #B3271E; }
+  .footnote { font-size: 12px; color: var(--mute); margin-top: 10px; }
+  .teacher-toolbar { display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; margin-bottom:16px; }
+  .teacher-toolbar .field { min-width: 140px; }
+  table.roster { width:100%; border-collapse:collapse; font-size:13px; }
+  table.roster th { text-align:left; padding:8px 10px; background:var(--navy); color:white; position:sticky; top:0; }
+  table.roster td { padding:8px 10px; border-bottom:1px solid var(--line); }
+  table.roster tr:hover td { background: #F7F9FC; cursor:pointer; }
+  .empty-state { text-align:center; padding: 50px 20px; color: var(--mute); }
+  .modal-backdrop { position:fixed; inset:0; background:rgba(20,25,40,0.55); display:flex; align-items:center; justify-content:center; z-index:50; padding:20px; }
+  .modal { background:white; border-radius:14px; max-width:680px; width:100%; max-height:85vh; overflow-y:auto; padding:22px; }
+  .modal h3 { color: var(--navy); font-size:18px; margin-bottom:4px; }
+  .modal .meta { color: var(--mute); font-size:12.5px; margin-bottom:16px; }
+  .modal .block { margin-bottom:14px; }
+  .modal .block .k { font-weight:700; font-size:12.5px; color: var(--teal); text-transform:uppercase; letter-spacing:.3px; margin-bottom:3px;}
+  .modal .block .v { font-size:14px; white-space:pre-wrap; }
+  .modal-close { float:right; background:none; border:none; font-size:20px; cursor:pointer; color:var(--mute); line-height:1;}
+  .badge-cls { background: var(--soft); color: var(--navy); padding: 2px 8px; border-radius: 999px; font-size:11.5px; font-weight:700; }
+</style>
+
+<div id="quiz-app">
+  <div class="topbar">
+    <div class="title">Year 8 Science &middot; Topic 5.2 Quiz</div>
+    <div class="right">
+      <div class="timer" id="timer-display">30:00</div>
+      <button class="staff-btn" id="tab-teacher-btn" title="Staff access">&#128274;</button>
+    </div>
+  </div>
+
+  <div class="hero">
+    <div class="eyebrow">Assessment &middot; 20 marks</div>
+    <h1>Elements Are Made Up of One Type of Atom &mdash; Quiz</h1>
+    <div class="sub">11 multiple choice (1 mark each), 5 short answer (1 mark each), 2 extended response (2 marks each) &mdash; 20 marks total.</div>
+  </div>
+
+  <div id="view-student" class="panel"></div>
+  <div id="view-teacher" class="panel" style="display:none;"></div>
+  <div id="modal-root"></div>
+</div>
+
+<script>
+(function () {
+  document.title = "Year 8 Science \u2014 Topic 5.2 Quiz";
+
+  // ---- SETUP: paste your Google Apps Script Web App URL between the quotes below ----
+  const SUBMIT_ENDPOINT = "https://script.google.com/macros/s/AKfycbwUKwTEsb1_AXQCC-cHr8dqCDGKOw7kMVTi0RD-iJp1JQ8AIKFqOXKp5uFM21C-f7idQw/exec";
+  const ENDPOINT_READY = SUBMIT_ENDPOINT.indexOf("PASTE_YOUR") === -1;
+  const QUIZ_ID = "5_2"; // identifies this quiz's tab in the shared spreadsheet
+  const TEACHER_PIN = "1234";
+  let staffUnlocked = false;
+
+  const CLASSES = ["8A", "8B", "8C", "8D", "Other"];
+
+  const MCQS = [
+    { stem: "What is an element?",
+      options: ["A mixture of two or more substances", "A pure substance made of only one type of atom", "Any substance that is a gas", "A substance that can be broken into simpler parts"], correct: 1 },
+    { stem: "Approximately how many elements occur naturally on Earth?",
+      options: ["10\u201320", "50\u201360", "94\u201398", "150\u2013200"], correct: 2 },
+    { stem: "What happens to elements that are made artificially?",
+      options: ["They last forever", "They break down almost instantly", "They turn into gases", "They become more stable over time"], correct: 1 },
+    { stem: "Why can't elements be broken down into simpler substances?",
+      options: ["They are too small to break", "They are already the simplest form of matter", "Scientists haven't tried yet", "They are always gases"], correct: 1 },
+    { stem: "Elements are broadly classified into two main groups. What are they?",
+      options: ["Solids and liquids", "Metals and non-metals", "Heavy and light", "Natural and artificial"], correct: 1 },
+    { stem: "In the solid state, what structure holds metal atoms tightly together?",
+      options: ["A chain", "A lattice", "A ring", "A cloud"], correct: 1 },
+    { stem: "What is generally true about non-metals at room temperature?",
+      options: ["Most are liquids", "Most are solids", "Most are gases", "Most behave like metals"], correct: 2 },
+    { stem: "What does 'monatomic' mean?",
+      options: ["Many atoms joined together", "A single, separate atom", "Two atoms joined together", "No atoms at all"], correct: 1 },
+    { stem: "Which of these gases is monatomic?",
+      options: ["Oxygen", "Hydrogen", "Neon", "Nitrogen"], correct: 2 },
+    { stem: "What does 'diatomic' mean?",
+      options: ["A single atom", "Two atoms joined together", "Many atoms in a long chain", "An atom with no charge"], correct: 1 },
+    { stem: "Real oxygen gas exists as which of the following?",
+      options: ["Single O atoms", "O\u2082 molecules", "O\u2083 molecules", "OH molecules"], correct: 1 },
+  ];
+
+  const SHORTS = [
+    "Which state of matter are most non-metals at room temperature?",
+    "What word describes a gas made of single, separate atoms?",
+    "What word describes a gas made of atoms joined in pairs?",
+    "What is the name for a horizontal row of elements in the periodic table?",
+    "What is the name for a vertical column of elements in the periodic table?",
+  ];
+
+  const ALUMINIUM_IMG = "iVBORw0KGgoAAAANSUhEUgAAAEwAAABgCAYAAAC3+ZRmAAABY2lDQ1BrQ0dDb2xvclNwYWNlRGlzcGxheVAzAAAokX2QsUvDUBDGv1aloHUQHRwcMolDlJIKuji0FURxCFXB6pS+pqmQxkeSIgU3/4GC/4EKzm4Whzo6OAiik+jm5KTgouV5L4mkInqP435877vjOCA5bnBu9wOoO75bXMorm6UtJfWMBL0gDObxnK6vSv6uP+P9PvTeTstZv///jcGK6TGqn5QZxl0fSKjE+p7PJe8Tj7m0FHFLshXyieRyyOeBZ71YIL4mVljNqBC/EKvlHt3q4brdYNEOcvu06WysyTmUE1jEDjxw2DDQhAId2T/8s4G/gF1yN+FSn4UafOrJkSInmMTLcMAwA5VYQ4ZSk3eO7ncX3U+NtYMnYKEjhLiItZUOcDZHJ2vH2tQ8MDIEXLW54RqB1EeZrFaB11NguASM3lDPtlfNauH26Tww8CjE2ySQOgS6LSE+joToHlPzA3DpfAEDp2ITpJYOWwAAAARjSUNQDA0AAW4D4+8AAAA4ZVhJZk1NACoAAAAIAAGHaQAEAAAAAQAAABoAAAAAAAKgAgAEAAAAAQAAAEygAwAEAAAAAQAAAGAAAAAAMUAn3wAAFlRJREFUeAHtXXlwlVWWP29/WYEkJCGAJIR9lzUsitAgIDYKdquUOjNqtdrtzFhTY/V01cxYVk2VPX/YPVtPu7S2PdNit4oMNpvaCoKyBAh7gAAhC9n3l5ft7fP73Zfv8SWQPeQlVg68vO973/2W+/vOOffcc8691+AOBAJFxUVyJuu0vPfubyUhLk6e2PqE2CxWMRoM4nF7xR/wiwREDCajGIxGEXz8fr/4xI99HDLId4KMAaOYxCiuZpfUVNbIW//9pjTUOeWZv3haRkWPlIDHL2ZVU4AhgYAY/NjAj74Wt5iMVrEAIB/3PR7x+X1is9vFZDGJAf/cXvzu84jBbJSASeE55EEjGGYD6se6uVE3MAKZxGcIiCvgVfU1k1O8HuyggBGs4gVYdeXV4rI1is1sFbAXmIuI4phXxGt0iw/genxeAYwAy9AKGMsMZTKICfV34e07a+qktLhE/F7UD2CVVVWIK9YtFrNFzD6fT7xut3haXOJtckmdo1muZV8WoCIWgGSFaJrNZjGZTAo2HwD0gNv82PPjYhRHP8Ry6POYAQxDtjBKfZ1DSsrLpaHeKS1ej1y5ekViYmLFHhEBkQSHEUkP5NZRVSOO8ioxN3ulodYBMXRBLM1QWZBs8KcXusynPq3chN/AX7jLUOcuTTJMEEmbuCBKzpYmqXDUiAdVyzZcAIOIuMFcZhMUuAWa22Iwiw3ARFvsEhcVK5FeA4B0K5k2ogyRB0+pE3kyEISCBGC4iIH6T7vnEP3mK/cDh4DJArH0id1qk1pnnZggXalpaWKyWcQN5jJbjAAKYhdti5D4mBGSbB8hGfMWQFYhkj4A2QqWkc0hYEFDokSTomjGHyO404Sy3wVyo/FyQS7rPS6paKgTR4NTApFWuX/tWhmZmCAGq1nMFDUbUI0AaDZwWYzdJmPjEyXabBNKrIEWhQ+chQ8F0A+gKJZ+cJUFx6wAzcofhzpmqEILAGsxBaTB75bI6GiJARP5gUc6OGzE6HhxAQxlVrAptQIscowCAeJnQ2sBIwIiR7MioMwLgktxpMInh1l8IpEoS8AM/GEIE1tDZVZAgvwBM+plAhYGtn2QMuCA6tG0MoNRlM6mlqIuMxGRFhgMKOAFaGaAQtAookboLRqtNF4NaAxsKK9EF+fy/1Amvm8yAv83e9zib4YtSnvM45OWxkaxxkRCnKCGgiwDpQ1QaIfwYwA4ZiBuBQpsCIiuUmG4mDIl8A0TDLyF62Pb+x1oJVklEi19M0wng8sLqUMjAOnzumB7ouU0WCCFSvcArACUNy19iiU6RWJHYxBhsIgdokr7RLEhuI+mhQctI3WaHzINvhvy3KWQwh++fNbVCmagarIBrADsT6osE9URGAdanQVhMKDJDAAw7pshbibaXjiR3R8fWJP2mhkgUo9RdL08h3eizA91edQQw+v3k5OoglBHGvXsR9si7GK1WlQXSQHmh26CBYGuDrpJlDP0F2GKqNZQwHnQdmJUmKGrgL6jAEzKKbBVxC2KbW/IjQc8U3pNvYiF46beconc6hK54ahAK26TiXFjZHTUyFvK9NcPqhNIpsF/MgLxcEHdBCy0z6C30Z9UrWQAgAXMJhRAt4f6CNvASJkORJrdIpRXF4LgKs4ie6oLozhNWrXdwyd3uprlnZN75GhhNgA3yIePv9LmCh9fOCj7rmRKdVO9Mn1Gw2Pw48UPyayk1Dbl+m2HdWplBC8q5AMubiDUAoUdAQ5ir6aVwwAOAKHyZutIjqNyV60GAKMY0vVBe4zgBz9BxPhX6bgePjVZ/fVvPpTdOUelttmpztZfJ7emRN7I/BQNtls2z1ghTleTvH/2S3Fh/93NL5One3jHrouzXooR8M1tHwTJg48bulq5sqCGzMFqBy/GplX7BH/p+C8vyHO1T8clb3/EB5246/IR2TpntfzfxW+lrKGmDQTF9VUSY42UH85cKY/Nug+dYLecKrkqh/LPSWWDQ5LAbf1NrJNCil/EonWXNppGSiS1nYH8pgj+ePEmeWTGPXLg+hkFmP7+k+LHys/ufVwmx42F3hqh9KkVjZEXxiM5PlwUNsDY6X9i7vfARRG3rfvYmHjhh3S+PE9xYW5tqdyXOldGRUTf9pyB+DFsgLFn0RFY7SueBVF8/xz0F3xTKybMgnkDxRImYts36GnR2Cny/MIHJSFyhHx+7aTUo3UNF4WNw7qqcA1azkZPiyRHxcnMxFQZE5MgRfWVsgMNxNXqIlmQMrmrS9yR44OWw47cyJZ/OfB7ySy+pCoeB71lQheFRCDDRYOWw6Lg+aX4VYPTbjgqla12uPCCxNqjZOKo5HDhFbT0w3b3Tm48f8xk+dHCjfJJ9iF54/ifpMHdIiMB1tPz10tydFwnZ97ZQ4OCw15aukXqWhra1HQEwPnRgo0yJ2mi6hrRDBkbmyALx04Nays5KAB7YMriNmBpO7TmN01bqtxJdF6a0E0LNw0KwLoCwYLO/2Ch8L+ywYJEN59jGLBuAqUVGwZMQ6Kb38OAdRMorVjYlf7RG5dkV84R9Txr0xfKqrS52rO1+c6uKJBt6ICTZoyeIE/OXdPm+EDthB0welHpdSUV1lXKSrhvYEHcQnm1ZbLt7Ffq91Vp88IGWFhFsqyhVr4tOB8CJ6skRwod5aF9/YbKgmz9gakK4aKwAnYw72wbC78JSSB/zj0VLiy6dd+wAUYu2X7x0C0PuRPuGwaKByuFDbDrNaVyrux6CJdYG3IXQJerbsjFyoLQ74NtI2yAfQHXDSNBpNnoYK9JX6C2vX6v7LlyTG0Pxj9hAcyFhOLtcNtotGnaMtmC2KNGe3IylTtH2x9M32EBLBtRoOuIAJGsSOZbkz5f5ianww0djBLRFZ1VcmUw4RR6lrAAtivnpsjNHzNJ7hqRKNRhq2FfabTj4jfa5qD6HnDDtR4h/8+unQiBwCSTvcifIAUTEYKHGOGuaHRIIoK4g4kGHLDjRZelBGkAGjFIW1xfrXYbPDfDZ4wafVNwTkXGtbKD4XvAAWOYTE9VTQ7h53bE7J3N01cEk2F06QGN8O+HiwYUMHaFjiDyo9HD05eHFL32m6OlUT44F+wznkbeWH5dGaJEYySltUFgOfYr38naK+NiR8v6yYu0Uwfke0ABOwi9VNsa7GDr+BPkeiW001Hkns+h45gTRjvti2tZ8sKiB4XJKQSILWhNc728dWKPTEsYP+CADWgryZCZRovHTZPJACE+IqbN564Ro+WeCXO0YvJx9kGVucNW9B/ueVyWjZ+pTJGKxlq5AfAGmgaUw34w8x7ZODVD1XE6uKOjtKVnEXucr0sF0JLnNk5dAhGOQ6pAsRogNqK1OzWQoA0oYI8iMa47NCd5ovDTnhhmW4S4JD/hogEVyXBVsj/vOwxYD9EcBmwYsB4i0MPi/ab0c+kQLL+u7Cfmcs1NniTpGIjQER0vzlEG6MPTl6kc/I7Kab/TQ3uy+IpcRzp6s9eFxJTRKt/VhnHYemI5pnjmoiV1YRRL6shk5Qnpr7zYfgEsE/3Dd07uhcumRBKjR0k5LPr0USny7IINkjF+ur4+apvG6S8OfyxJGNWxZcbyW463/4FJ34wY7YaXg/mtzLWoRMf8bFmuPAMThKmcJA7ieP/Ml7L3aqawxxCNhGO6u+ckp8nfZmxR2diqYB/+9FmHMVGXlc+tLZbHZ69SFWBePd3MvzjycXD4TbsH/Dr/rBy7cVHugzuHI4K7ohy4rd88sQsGq1mF1/5y3jpZdtdM+Z/TX8h+pKxrdLmyEOV2q0FWT827X56+e70swnCcj9An/RPGBPQH9RmwMmeNZBZdko1TMlSy21q4mpn0dv+khULPBLMH9dSIyBArPzspTVZPvFt/qMPtwxhaw4EOT81bK0yNWj1xnkoSpmtoV2tMkyczzbPEWYX7r5OteHk0dJlMnAhOJmg3hyd0eKsuD/QZsCibXf5x5RPyEDrSWjo4OYH9PlIVREdPh8BdDH781d3rVEah/lhH24V1wVilPhGYgx3YKefALo0a3EH30ESoA60XwXKj0P3iSJP+oD4DFg/9QT3Ch9eI48H5ttnBToJO06gZ3PXG8SB30S3dXWJ3iMSB6xq5ERcocVZLBMama8QUAtL+vNPiBHhsAM7i5RSBy8nRtwmoa6d2+7trBdLFpfgQHFuppwN5ZyQTOur7U5dKcsxNwA4hyk1FzYd/G6PYEqNGyQaIGJV/Z5SBDjfp3VOfyfPwXHDs9Te4FocFPjprZejUBSlTkLG4TP547oBqgWMxVulyVSEGu0fKczivP6jPgLV/CCro/zi6Q1KR6fzC4gdDSt2D8Nm7WftUcY6pZgeaY4xOlV6Vv1v6iKR1khk9BV4NuoL2IvxW1+IEYAE0KvnqWltm3Bt6BIoePSBU8ORAmhLZFfkwb1JkasK4ULm+bPQrYNVNTvm3IzuUqPx87bMyJf7mQ16sKFSj0ZhI8oOZ98IhmCAXKvLkn796T1XopYzNHdYjEsr9uUUbFagF0GeMCxyA2C1HSzlvTHrovBPFlzG+8rji7HVwLEZg7iC6wH9/9s/yG3D0P618MlS2txv9Bhjf6Nsnd8uXuVkYhbZVmQz6h2LYjFz25Lw1smZiUH/NSJyg7Kbdl4/J3yx5OKSo9edp26Ps0fII3EMclPqHc/vVz0xLJygafQrOqoS7+98feDHEURnjZyDBpUI+PH8Q99gszM7uC/VZ6fPmbK7pHPzj+QOqUj+EXuFcD3piUIOk5zo7rPQJEMU8xCjZUHRFdO8wi+cThOCWAogl49oaxTmVN8C5cSGweL1oq125g+pdjYhC3Ww0urpXR8f7BbCjUPBvgrtmQZm/uOQhuZ1jT2tFOYZbI3IldR51j2YGaMc6+mZIjmONyF0UVT2xNWXcgFymEa1/LVeDln9fqc8iyW7QLw9vl3wEJrbOXq26LOy2aESgqHwXw+KmWBFYM7o2bLlo2BYgyPHCou+HAKuCL/9XmTsxVjIBoDygXUZ9k0t/B+s+A5xFDmtPNFQ53Ob1bz9SdiEBPVOaq9QEdSdtsr5SnwHLry0XKlvS1zAnaJjq6e+XPyoLIiar6NDLKx6FLvkaDcMnijtKYUxyRC6HMWtEUN6D+TAnKf0WwD67ekJx188efvkW7uL5S2F+EPz910+rHga5thS22t0YhvMcOFIzrLV79ea7z4ClxMbLK/c91eG9tWkTqH/ooh6PtACmNHkhjvGRsdAv0+BRSAqdz440r6edFzqAjQkox2NL0TrejjgWiUb0XLi3i9CVaoTxSu4mYFMRQ+gP6jNg4xHloVeiO8Qu08rUObIco2rVnIroCbQnuoY6uh7NCH46IwLEXgQbEbbKnLmqP6nPgPXmYTgXBmZ6682p3T6H4tjfYPHmd/apu129oVNwGLAevqthwIYB6yECPSw+zGHDgPUQgR4WH+awOwUY3SotiPPpyYs5tWqb2w5u1x/v7TYNTua3dofK4YHgVM8DRd3msF9n7ZF9uSfbPBenpXobYa3+pjJnrfzXsR3duuy/HvqDCh53q3A/FOoWYHSZbIOv6zenP1PTUWn3dSCb8HN0iPubOAlvd/t+dELeCYu+ozp1C7D9GHU2CxEZTraRU1XU0bWUg64UcUqN6LDT9um2YYeYKZtnEMmhV4L9PU5xxVxWxis1ikbwgvNTaER/FtM32WlnfFLvamTfMhqhPhJzX+m+1ki/X1BXoe7NrEX6+TlyjjOZX0Lwl9fvrlh32ZdkpT68cEiem79B+eR3w4E3fUya9kxtvk8gX4KxQUa+SdxnWgAjO+eRd8EM6lmJqapSDOVPGT1OAcrIE4fS/HTFY8qFzBxWph68vv55dZ3/PLoTntqxauLIcqRqMv1g/aRgMjCPvbb2GYmDE5KDIThmid4Kkn6fjsdiuHqYEkqXD52JzMvgBG4N0M+x8NW9uPQhdV5nf7rkMM5FyLe6Ag67TVOWyC7cWM8N+oszys1Rahqp/dYhMgykfltwQe4amai4h9zCtPLZiWnKxXMRb/oYIugkTkbEaLpGHORQ725S4TkOr3nz+O4QR/CYNsiLyTCaK5zn6vcvVRWoBJXJCMwswPRa2wHuubI8lTQzH+G57cilZfyyK+oSsH1XTsAxN129+am4GV00p5Ed0xtiGuaGyYvVuO574eaJj4hVoX+O86ZL5rgOpPbX34zIOidbYwrAFagFTiLZU2KKAe/FtAa6pRhJ5z7TDxipz8FL64o6FUm+uZ2IxMTbY+XVg9sQ7cDaGDAtdl46LEtSZ99ybc5rSJNAI3c7M4TORo2Y75Com/iR+3ng5o5Icyhq4yo1rtKXZ/KwR3dPztCpJy0KTxXAvH/tmizDeIBe/+nP0293ymHnS/NUQHTD5IXqBinR8bIV+unr62fRlDvUmiHUWRpIacjFYt4Ew/QU27Pwp+tJy4bmb7qBHfoifdoO5lrkqmem+1sbMXfzooQqSDe3br+vlWv/3SmH7b50TNZCVJ5fuAGTegfncW2CsboHAw+OFmTLKrD4RESVXzv4gfw14orzUyaJHXHCn8M2Gg8Wr0GUujNqAyAKavvat/7c9r/p97VtZgy9DXvxtUMfyBhMmUWF3hn15qWZXn3l1VedDqdUFpfKmeNZEmG0yKxJU8UKyfI0t8gq6Jok+NmNTOWASHLK4GRMSxUPcaIvnnFAigdH1bKlSsKDMumELL8EgxeYIDIO5Tm/NSNBE6D0SYxbMvpNPz2JkaQUlOM1uToEQ2/MwSBFYvI15u1Tf7bf1x+LQ4wgCnFIrogzKT4FOmoKkunSlf6lrcbRJHxGElvISZjylHEFEhNn0hNwPDJGPDA3qr3NcjovR1wRZlm0PEOiIiNVMgumVw4ESgqK5WLmKfndr96SOHOkPLZuk0S1BCTSFRA7l7lAUY3DPBBiP0Dz4PVwLRDKtH6GX97cqyb67lTaWeyOUW/vr82O3IQFVK60VMtvv/pU6uNs8pOfviSj4+NVfdUrozxzJghOq8yphAkK18fAnNUAKhjZ5koFHM+ItVUw9XJwCmZakIRFN5FuEARMjta21xn8ecD+9vL+NIg5QzCnV9Y+oRmD8RvJDA4LrsCAVVU8VqM0mANSZ4Q8WjmPPPQWEOJ06VyUALPz44I4E8s6cEp4SqimP4KXG9p/KTGcBt/LLAdwi4+MgY+Bs79juhauIWAuLSqVmupqqW10SkPAI404oaChUhoNdmnyYYUCLDXmx8pa/DAQStOBMKm3QXwIKl/DECfWwIi8AgOmqw9gFTFnoEl5Z5ohdrVOBxgE/7Bglvmj/90mDked5JeWSN6NQnCWWQ5nHZdo6C/qMQsAo9hR6SvRw1vgrOeADtyGt4BjGrcNZczIB1zawgiGMSHhpTzglsoaMBKmPN+9b69EWq2oNxZRuXAoU+rrHVJaWy2NpZViio6QOku5NDe4pKEZCyJREtGCcbUGrmYQQFMdUEodfAvAuLJUcKb5oQwXZYYaB9O/Q/QITKmvWVwul7iwdk9+fh5aVaxWAUDNC1PSpT7GKYW2GGmprBU7FoJalDpNYrF0w0i0kHau/ATiEhhckowyzotzCTIs2gblztUegiKqCg7hPwz+WrD4QnNzk1xtqpLK/Gyxxdtl5b0rJRrLXHBVhv8HLOdiJLsnh+4AAAAASUVORK5CYII=";
+
+  const EXTENDED = [
+    { stem: "Explain the difference between a monatomic gas and a diatomic molecule. Use one named example of each in your answer.", marks: 2 },
+    { stem: "The image shows an entry from the periodic table for aluminium. Identify its atomic number and atomic mass.", marks: 2, image: true },
+  ];
+
+  let state = {
+    name: "", cls: "8D", date: new Date().toISOString().slice(0, 10),
+    mcqAnswers: new Array(MCQS.length).fill(null),
+    shortAnswers: new Array(SHORTS.length).fill(""),
+    extendedAnswers: new Array(EXTENDED.length).fill(""),
+  };
+  let submitted = false;
+  let submitStatus = null;
+
+  function elx(tag, attrs, children) {
+    const e = document.createElement(tag);
+    if (attrs) for (const k in attrs) {
+      if (k === "class") e.className = attrs[k];
+      else if (k === "html") e.innerHTML = attrs[k];
+      else e.setAttribute(k, attrs[k]);
+    }
+    (children || []).forEach((c) => { if (c) e.appendChild(c); });
+    return e;
+  }
+  function text(t) { return document.createTextNode(t); }
+
+  // ---------------- Timer (visual only, does not force submission) ----------------
+  let secondsLeft = 30 * 60;
+  let timerInterval = null;
+  function startTimer() {
+    timerInterval = setInterval(() => {
+      secondsLeft = Math.max(0, secondsLeft - 1);
+      const m = Math.floor(secondsLeft / 60), s = secondsLeft % 60;
+      const disp = document.getElementById("timer-display");
+      if (disp) {
+        disp.textContent = String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+        disp.classList.toggle("low", secondsLeft <= 60);
+      }
+      if (secondsLeft === 0) clearInterval(timerInterval);
+    }, 1000);
+  }
+
+  function renderStudent() {
+    const root = document.getElementById("view-student");
+    root.innerHTML = "";
+
+    const setup = elx("div", { class: "setup-grid" });
+    const nameWrap = elx("div", {}, [elx("label", { class: "field-label" }, [text("Your name")])]);
+    const nameInput = elx("input", { type: "text", placeholder: "e.g. Yusuf A." });
+    nameInput.value = state.name; nameInput.oninput = (e) => { state.name = e.target.value; };
+    nameWrap.appendChild(nameInput);
+
+    const clsWrap = elx("div", {}, [elx("label", { class: "field-label" }, [text("Class")])]);
+    const clsSelect = elx("select");
+    CLASSES.forEach((c) => {
+      const opt = elx("option", { value: c }, [text(c)]);
+      if (c === state.cls) opt.selected = true;
+      clsSelect.appendChild(opt);
+    });
+    clsSelect.onchange = (e) => { state.cls = e.target.value; };
+    clsWrap.appendChild(clsSelect);
+
+    const dateWrap = elx("div", {}, [elx("label", { class: "field-label" }, [text("Date")])]);
+    const dateInput = elx("input", { type: "date" });
+    dateInput.value = state.date; dateInput.onchange = (e) => { state.date = e.target.value; };
+    dateWrap.appendChild(dateInput);
+
+    setup.appendChild(nameWrap); setup.appendChild(clsWrap); setup.appendChild(dateWrap);
+    root.appendChild(setup);
+
+    // Part A: Multiple Choice
+    root.appendChild(elx("div", { class: "part-header" }, [
+      elx("span", {}, [text("Part A \u2014 Multiple Choice")]),
+      elx("span", { class: "count" }, [text(MCQS.length + " questions \u00B7 1 mark each")]),
+    ]));
+    MCQS.forEach((mcq, qi) => {
+      const q = elx("div", { class: "q" });
+      q.appendChild(elx("div", { class: "qnum" }, [text("Q" + (qi + 1))]));
+      q.appendChild(elx("label", { class: "qtext" }, [text(mcq.stem)]));
+      const opts = elx("div", { class: "mcq-opts" });
+      mcq.options.forEach((optText, oi) => {
+        const optRow = elx("label", { class: "mcq-opt" });
+        const radio = elx("input", { type: "radio", name: "mcq" + qi });
+        radio.checked = state.mcqAnswers[qi] === oi;
+        radio.onchange = () => { state.mcqAnswers[qi] = oi; };
+        optRow.appendChild(radio);
+        optRow.appendChild(text(optText));
+        opts.appendChild(optRow);
+      });
+      q.appendChild(opts);
+      root.appendChild(q);
+    });
+
+    // Part B: Short Answer
+    root.appendChild(elx("div", { class: "part-header" }, [
+      elx("span", {}, [text("Part B \u2014 Short Answer")]),
+      elx("span", { class: "count" }, [text(SHORTS.length + " questions \u00B7 1 mark each")]),
+    ]));
+    SHORTS.forEach((stem, qi) => {
+      const q = elx("div", { class: "q" });
+      q.appendChild(elx("div", { class: "qnum" }, [text("Q" + (qi + 1))]));
+      q.appendChild(elx("label", { class: "qtext" }, [text(stem)]));
+      const inp = elx("input", { type: "text", placeholder: "2\u20133 words" });
+      inp.value = state.shortAnswers[qi]; inp.oninput = (e) => { state.shortAnswers[qi] = e.target.value; };
+      q.appendChild(inp);
+      root.appendChild(q);
+    });
+
+    // Part C: Extended Response
+    root.appendChild(elx("div", { class: "part-header" }, [
+      elx("span", {}, [text("Part C \u2014 Extended Response")]),
+      elx("span", { class: "count" }, [text(EXTENDED.length + " questions \u00B7 2 marks each")]),
+    ]));
+    EXTENDED.forEach((item, qi) => {
+      const q = elx("div", { class: "q" });
+      q.appendChild(elx("div", { class: "qnum" }, [text("Q" + (qi + 1))]));
+      q.appendChild(elx("span", { class: "marks" }, [text(item.marks + " marks")]));
+      q.appendChild(elx("label", { class: "qtext" }, [text(item.stem)]));
+      if (item.image) {
+        const img = elx("img", { src: "data:image/png;base64," + ALUMINIUM_IMG, alt: "Periodic table entry for aluminium" });
+        img.style.display = "block";
+        img.style.width = "110px";
+        img.style.margin = "6px 0 12px 0";
+        img.style.border = "1.5px solid var(--line)";
+        img.style.borderRadius = "8px";
+        q.appendChild(img);
+      }
+      const ta = elx("textarea", {});
+      ta.style.minHeight = "90px";
+      ta.value = state.extendedAnswers[qi]; ta.oninput = (e) => { state.extendedAnswers[qi] = e.target.value; };
+      q.appendChild(ta);
+      root.appendChild(q);
+    });
+
+    // Submit row
+    const submitRow = elx("div", { class: "submit-row" });
+    const btn = elx("button", { class: "btn" }, [text(submitted ? "Update my answers" : "Submit my quiz")]);
+    btn.onclick = handleSubmit;
+    submitRow.appendChild(btn);
+    if (submitStatus) submitRow.appendChild(elx("div", { class: "status-msg " + submitStatus.type }, [text(submitStatus.msg)]));
+    root.appendChild(submitRow);
+    root.appendChild(elx("div", { class: "footnote" }, [text("Short-answer and extended-response questions are marked by your teacher \u2014 only the multiple-choice section is scored automatically. If you make a mistake, update your answers and submit again \u2014 it replaces your previous submission.")]));
+  }
+
+  async function handleSubmit() {
+    if (!state.name.trim()) {
+      submitStatus = { type: "err", msg: "Please enter your name before submitting." };
+      renderStudent();
+      return;
+    }
+    if (!ENDPOINT_READY) {
+      submitStatus = { type: "err", msg: "This quiz isn't connected yet \u2014 ask your teacher to finish setup." };
+      renderStudent();
+      return;
+    }
+    submitStatus = { type: "ok", msg: "Saving\u2026" };
+    renderStudent();
+    const mcqScore = MCQS.reduce((n, m, i) => n + (state.mcqAnswers[i] === m.correct ? 1 : 0), 0);
+    const payload = {
+      quiz: QUIZ_ID,
+      name: state.name.trim(), cls: state.cls, date: state.date,
+      mcqAnswers: state.mcqAnswers, mcqScore, mcqTotal: MCQS.length,
+      shortAnswers: state.shortAnswers,
+      extendedAnswers: state.extendedAnswers,
+      submittedAt: new Date().toISOString(),
+    };
+    try {
+      const res = await fetch(SUBMIT_ENDPOINT, { method: "POST", body: JSON.stringify(payload) });
+      const result = await res.json();
+      if (!result || result.ok !== true) throw new Error((result && result.error) || "save failed");
+      submitted = true;
+      submitStatus = { type: "ok", msg: "Submitted! Your teacher will see your answers." };
+    } catch (err) {
+      submitStatus = { type: "err", msg: "Couldn't save right now \u2014 check your connection and try again." };
+    }
+    renderStudent();
+  }
+
+  // ---------------- Teacher dashboard ----------------
+  let teacherData = [];
+  let teacherLoading = false;
+  let teacherError = null;
+  let filterCls = "All";
+  let filterDate = "";
+
+  async function loadTeacherData() {
+    if (!ENDPOINT_READY) {
+      teacherError = "This dashboard isn't connected to a spreadsheet yet. Complete the setup steps in the .gs.txt guide, then refresh.";
+      teacherLoading = false; renderTeacher(); return;
+    }
+    teacherLoading = true; teacherError = null;
+    renderTeacher();
+    try {
+      const res = await fetch(SUBMIT_ENDPOINT + "?quiz=" + QUIZ_ID, { method: "GET" });
+      const rows = await res.json();
+      const items = (rows || []).map((r) => ({
+        name: r.name, cls: r.cls, date: r.date,
+        mcqAnswers: safeParse(r.mcqAnswers, []), mcqScore: Number(r.mcqScore) || 0, mcqTotal: Number(r.mcqTotal) || MCQS.length,
+        shortAnswers: safeParse(r.shortAnswers, []),
+        extendedAnswers: safeParse(r.extendedAnswers, []),
+        submittedAt: r.submittedAt,
+      }));
+      items.sort((a, b) => (a.name > b.name ? 1 : -1));
+      teacherData = items;
+    } catch (err) {
+      teacherError = "Couldn't load submissions. Check your connection and try refreshing.";
+    }
+    teacherLoading = false;
+    renderTeacher();
+  }
+  function safeParse(v, fallback) {
+    if (v && typeof v === "object") return v;
+    try { return JSON.parse(v); } catch (e) { return fallback; }
+  }
+
+  function downloadCsv() {
+    const rows = [["Name", "Class", "Date", "MCQ Score (/11)", "Submitted At"]];
+    filteredData().forEach((d) => { rows.push([d.name, d.cls, d.date, `${d.mcqScore}/${d.mcqTotal}`, d.submittedAt]); });
+    const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "quiz_5_2_submissions.csv";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function filteredData() {
+    return teacherData.filter((d) => {
+      if (filterCls !== "All" && d.cls !== filterCls) return false;
+      if (filterDate && d.date !== filterDate) return false;
+      return true;
+    });
+  }
+
+  function showDetail(d) {
+    const root = document.getElementById("modal-root");
+    root.innerHTML = "";
+    const backdrop = elx("div", { class: "modal-backdrop" });
+    backdrop.onclick = (e) => { if (e.target === backdrop) root.innerHTML = ""; };
+    const modal = elx("div", { class: "modal" });
+    const closeBtn = elx("button", { class: "modal-close" }, [text("\u00D7")]);
+    closeBtn.onclick = () => { root.innerHTML = ""; };
+    modal.appendChild(closeBtn);
+    modal.appendChild(elx("h3", {}, [text(d.name)]));
+    modal.appendChild(elx("div", { class: "meta" }, [text(`Class ${d.cls} \u00B7 ${d.date} \u00B7 Submitted ${new Date(d.submittedAt).toLocaleString()} \u00B7 MCQ: ${d.mcqScore}/${d.mcqTotal}`)]));
+
+    function block(k, v) {
+      return elx("div", { class: "block" }, [elx("div", { class: "k" }, [text(k)]), elx("div", { class: "v" }, [text(v || "\u2014")])]);
+    }
+    MCQS.forEach((mcq, i) => {
+      const given = d.mcqAnswers[i];
+      const givenText = given === null || given === undefined ? "No answer" : mcq.options[given] + (given === mcq.correct ? "  \u2713" : "  \u2717 (correct: " + mcq.options[mcq.correct] + ")");
+      modal.appendChild(block("MCQ " + (i + 1), givenText));
+    });
+    SHORTS.forEach((stem, i) => modal.appendChild(block("Short Answer " + (i + 1), d.shortAnswers[i])));
+    EXTENDED.forEach((item, i) => modal.appendChild(block("Extended Response " + (i + 1) + " (" + item.marks + " marks)", d.extendedAnswers[i])));
+
+    backdrop.appendChild(modal);
+    root.appendChild(backdrop);
+  }
+
+  function renderTeacher() {
+    const root = document.getElementById("view-teacher");
+    root.innerHTML = "";
+
+    const toolbar = elx("div", { class: "teacher-toolbar" });
+    const backBtn = elx("button", { class: "btn secondary small" }, [text("\u2190 Back to quiz")]);
+    backBtn.onclick = () => {
+      document.getElementById("view-teacher").style.display = "none";
+      document.getElementById("view-student").style.display = "";
+    };
+    toolbar.appendChild(backBtn);
+    const clsField = elx("div", { class: "field" }, [elx("label", { class: "field-label" }, [text("Class")])]);
+    const clsSel = elx("select");
+    ["All"].concat(CLASSES).forEach((c) => {
+      const opt = elx("option", { value: c }, [text(c)]);
+      if (c === filterCls) opt.selected = true;
+      clsSel.appendChild(opt);
+    });
+    clsSel.onchange = (e) => { filterCls = e.target.value; renderTeacher(); };
+    clsField.appendChild(clsSel);
+
+    const dateField = elx("div", { class: "field" }, [elx("label", { class: "field-label" }, [text("Date")])]);
+    const dateSel = elx("input", { type: "date" });
+    dateSel.value = filterDate; dateSel.onchange = (e) => { filterDate = e.target.value; renderTeacher(); };
+    dateField.appendChild(dateSel);
+    const clearDateBtn = elx("button", { class: "btn secondary small" }, [text("Clear date")]);
+    clearDateBtn.onclick = () => { filterDate = ""; renderTeacher(); };
+
+    const refreshBtn = elx("button", { class: "btn secondary small" }, [text("Refresh")]);
+    refreshBtn.onclick = loadTeacherData;
+    const csvBtn = elx("button", { class: "btn small" }, [text("Download CSV")]);
+    csvBtn.onclick = downloadCsv;
+
+    toolbar.appendChild(clsField); toolbar.appendChild(dateField); toolbar.appendChild(clearDateBtn);
+    toolbar.appendChild(refreshBtn); toolbar.appendChild(csvBtn);
+    root.appendChild(toolbar);
+
+    if (teacherLoading) { root.appendChild(elx("div", { class: "empty-state" }, [text("Loading submissions\u2026")])); return; }
+    if (teacherError) { root.appendChild(elx("div", { class: "empty-state" }, [text(teacherError)])); return; }
+    const data = filteredData();
+    if (data.length === 0) {
+      root.appendChild(elx("div", { class: "empty-state" }, [text("No submissions yet for this filter.")]));
+      return;
+    }
+
+    root.appendChild(elx("div", { class: "footnote" }, [text(data.length + " submission" + (data.length === 1 ? "" : "s") + " \u00B7 click a row for full answers")]));
+    const table = elx("table", { class: "roster" });
+    table.appendChild(elx("tr", {}, ["Name", "Class", "Date", "MCQ Score", "Submitted"].map((h) => elx("th", {}, [text(h)]))));
+    data.forEach((d) => {
+      const tr = elx("tr");
+      tr.onclick = () => showDetail(d);
+      tr.appendChild(elx("td", {}, [text(d.name)]));
+      tr.appendChild(elx("td", {}, [elx("span", { class: "badge-cls" }, [text(d.cls)])]));
+      tr.appendChild(elx("td", {}, [text(d.date)]));
+      tr.appendChild(elx("td", {}, [text(d.mcqScore + " / " + d.mcqTotal)]));
+      tr.appendChild(elx("td", {}, [text(new Date(d.submittedAt).toLocaleString())]));
+      table.appendChild(tr);
+    });
+    root.appendChild(table);
+  }
+
+  document.getElementById("tab-teacher-btn").onclick = () => {
+    if (!staffUnlocked) {
+      const entered = window.prompt("Staff PIN required to view the dashboard:");
+      if (entered === null) return;
+      if (entered !== TEACHER_PIN) { window.alert("Incorrect PIN."); return; }
+      staffUnlocked = true;
+    }
+    document.getElementById("view-student").style.display = "none";
+    document.getElementById("view-teacher").style.display = "";
+    loadTeacherData();
+  };
+
+  renderStudent();
+  startTimer();
+})();
+</script>
